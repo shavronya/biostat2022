@@ -1,0 +1,78 @@
+---
+title: "ANOVA и post hoc сравнения"
+author: "Шавронская Дарья Олеговна"
+date: "2022-11-25"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(dplyr)
+library(multcomp)
+```
+
+```{r}
+soccer_general <- read.csv("soccer.csv", sep=";")[, 2:6] %>% 
+    mutate(Position = as.factor(Position), 
+    Nationality = as.factor(Nationality), 
+    Age = as.numeric(Age), 
+    Height = as.numeric(Height)
+) %>% 
+filter(Nationality %in% c("Spanish", "Italian", "German", "English", "Argentinian")) 
+
+set.seed(1) 
+
+soccer_wrk <- soccer_general[sample(1:nrow(soccer_general), 150), ] %>% 
+    mutate(Nationality = factor(Nationality))
+```
+
+```{r}
+summary(soccer_wrk)
+```
+
+```{r}
+lm(Height ~ Position, data = soccer_wrk) %>%
+  anova()
+```
+Отвергаем нулевую гипотезу о равенстве среднего роста игроков на разных позициях на поле
+
+Процедура Хоторна-Бретца-Вестфалла
+
+* p-value
+```{r}
+lm(formula = Height ~ Position, data = soccer_wrk) %>%
+  glht(linfct = mcp(Position = "Tukey")) %>% 
+  summary()
+```
+
+* 95% ДИ
+
+```{r}
+lm(formula = Height ~ Position, data = soccer_wrk) %>%
+  glht(linfct = mcp(Position = "Tukey")) %>% 
+  confint()
+```
+В четырех парах (Goalkeeper - Defender, Midfielder - Defender, Goalkeeper - Forward, Midfielder - Goalkeeper) отвергаем гипотезы о равенстве среднего роста на 5% уровне значимости. Для этих же пар ДИ не включают ноль. 
+
+Выводы совпадают с результатами предыдущей работы
+
+```{r}
+lm(Height ~ Nationality, data = soccer_wrk) %>%
+  anova()
+```
+
+
+```{r}
+lm(formula = Height ~ Nationality, data = soccer_wrk) %>%
+  glht(linfct = mcp(Nationality = "Tukey")) %>% 
+  summary()
+```
+```{r}
+lm(formula = Height ~ Nationality, data = soccer_wrk) %>%
+  glht(linfct = mcp(Nationality = "Tukey")) %>% 
+  confint()
+```
+Все ДИ включают в себя ноль, на 5% уровне значимости футболисты разных стран не различаются по росту. 
