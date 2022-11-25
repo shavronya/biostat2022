@@ -1,0 +1,136 @@
+---
+title: "Множественные сравнения"
+author: "Шавронская Дарья Олеговна"
+date: "2022-11-16"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(dplyr)
+```
+
+```{r}
+soccer_general <- read.csv("soccer.csv", sep=";")[, 2:6] %>% 
+    mutate(Position = as.factor(Position), 
+    Nationality = as.factor(Nationality), 
+    Age = as.numeric(Age), 
+    Height = as.numeric(Height)) %>% 
+  filter(Nationality %in% c("Spanish", "Italian", "German", "English", "Argentinian")) 
+
+set.seed(1) 
+
+soccer_wrk <- soccer_general[sample(1:nrow(soccer_general), 150), ] %>% 
+    mutate(Nationality = factor(Nationality))
+
+soccer_wrk %>% 
+  head
+```
+
+```{r}
+soccer_wrk %>%
+  summary
+```
+# Задание 1
+
+```{r}
+boxplot(Height ~ Position, data = soccer_wrk,
+            ylab = "Height (cm)")
+```
+```{r}
+alpha <- 0.05
+```
+
+
+```{r}
+
+D <- soccer_wrk %>% 
+  filter(Position == "Defender") %>%
+  pull(Height)
+
+F <- soccer_wrk %>% 
+  filter(Position == "Forward") %>%
+  pull(Height)
+
+G <- soccer_wrk %>% 
+  filter(Position == "Goalkeeper") %>%
+  pull(Height)
+
+M <- soccer_wrk %>% 
+  filter(Position == "Midfielder") %>%
+  pull(Height)
+
+```
+
+```{r}
+mean(D)-mean(F)
+t.test(D, F, conf.level = 1- alpha)$conf.int
+
+mean(D)-mean(G)
+t.test(D, G, conf.level = 1- alpha)$conf.int
+
+mean(D)-mean(M)
+t.test(D, M, conf.level = 1- alpha)$conf.int
+
+mean(F)-mean(G)
+t.test(F, G, conf.level = 1- alpha)$conf.int
+
+mean(F)-mean(M)
+t.test(F, M, conf.level = 1- alpha)$conf.int
+
+mean(G)-mean(M)
+t.test(G, M, conf.level = 1- alpha)$conf.int
+```
+* С поправкой Бонферрони
+
+```{r}
+alpha_adj <- alpha/6
+```
+
+```{r}
+t.test(D, F, conf.level = 1- alpha_adj)$conf.int
+t.test(D, G, conf.level = 1- alpha_adj)$conf.int
+t.test(D, M, conf.level = 1- alpha_adj)$conf.int
+t.test(F, G, conf.level = 1- alpha_adj)$conf.int
+t.test(F, M, conf.level = 1- alpha_adj)$conf.int
+t.test(G, M, conf.level = 1- alpha_adj)$conf.int
+
+```
+Есть разница между средним ростом в случае:
+
+Goalkeeper - Midfielder, 
+Forward - Goalkeeper,
+Defender - Midfielder,
+Defender - Goalkeeper 
+
+Интервалы покрывают реальную разницу между средним ростом.
+
+
+
+# Задание 2
+
+* Без поправки
+
+```{r}
+pairwise.t.test(soccer_wrk$Height, soccer_wrk$Position, pool.sd = FALSE, p.adjust.method="none")
+```
+4 открытия
+
+* С поправкой Холма
+
+```{r}
+pairwise.t.test(soccer_wrk$Height, soccer_wrk$Position, pool.sd = FALSE, p.adjust.method="holm")
+```
+4 открытия
+
+* С поправкой Бенджамини-Хохберга
+
+```{r}
+pairwise.t.test(soccer_wrk$Height, soccer_wrk$Position, pool.sd = FALSE, p.adjust.method="BH")
+```
+4 открытия
+
+Все открытия корректны 
